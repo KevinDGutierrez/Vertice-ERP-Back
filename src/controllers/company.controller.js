@@ -191,7 +191,7 @@ const resetERPData = async (req, res) => {
         };
 
         // 1. Get and delete all entries and their details
-        const entriesSnapshot = await db.collection('entries')
+        const entriesSnapshot = await db.collection('journal_entries')
             .where('companyId', '==', companyId)
             .get();
 
