@@ -8,6 +8,8 @@ router.get('/', companyController.listCompanies);
 router.get('/brand', companyController.getBrand);
 router.patch('/brand', companyController.updateBrandConfig);
 
+router.post('/reset', companyController.resetERPData);
+
 // Se conservan por compatibilidad, pero el ERP actual solo trabaja con rol contador.
 router.get('/all', isAdmin, companyController.listAllCompanies);
 router.post('/', isAdmin, companyController.createCompany);

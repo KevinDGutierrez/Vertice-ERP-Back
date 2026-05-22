@@ -169,6 +169,64 @@ const updateBrandConfig = async (req, res) => {
     }
 };
 
+/**
+ * Vaciar datos del ERP (Eliminar partidas y resetear cuentas a 0)
+ */
+const resetERPData = async (req, res) => {
+    try {
+        const companyId = req.user.companyId;
+        if (!companyId) return res.status(400).json({ message: 'Usuario sin empresa asignada' });
+
+        // Firebase batches are limited to 500 operations, so we manage chunks
+        const MAX_BATCH_SIZE = 450;
+        let batch = db.batch();
+        let opsCount = 0;
+
+        const commitBatch = async () => {
+            if (opsCount > 0) {
+                await batch.commit();
+                batch = db.batch();
+                opsCount = 0;
+            }
+        };
+
+        // 1. Get and delete all entries and their details
+        const entriesSnapshot = await db.collection('entries')
+            .where('companyId', '==', companyId)
+            .get();
+
+        for (const entryDoc of entriesSnapshot.docs) {
+            const detailsSnapshot = await entryDoc.ref.collection('details').get();
+            for (const detailDoc of detailsSnapshot.docs) {
+                batch.delete(detailDoc.ref);
+                opsCount++;
+                if (opsCount >= MAX_BATCH_SIZE) await commitBatch();
+            }
+            batch.delete(entryDoc.ref);
+            opsCount++;
+            if (opsCount >= MAX_BATCH_SIZE) await commitBatch();
+        }
+
+        // 2. Get all accounts and reset balance to 0
+        const accountsSnapshot = await db.collection('accounts')
+            .where('companyId', '==', companyId)
+            .get();
+
+        for (const accountDoc of accountsSnapshot.docs) {
+            batch.update(accountDoc.ref, { balance: 0 });
+            opsCount++;
+            if (opsCount >= MAX_BATCH_SIZE) await commitBatch();
+        }
+
+        await commitBatch();
+
+        res.json({ message: 'El ERP ha sido vaciado exitosamente. Saldos a 0.' });
+    } catch (error) {
+        console.error('Error vaciando ERP:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     listCompanies,
     listAllCompanies,
@@ -176,5 +234,6 @@ module.exports = {
     updateCompany,
     getCompanyUsers,
     getBrand,
-    updateBrandConfig
+    updateBrandConfig,
+    resetERPData
 };
