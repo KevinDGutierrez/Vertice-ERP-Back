@@ -117,6 +117,37 @@ const getAdjustedTrialBalance = async (req, res) => {
     }
 };
 
+const getLedgerComplete = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { startDate, endDate } = req.query;
+        
+        const AccountModel = require('../models/account.model');
+        const accounts = await AccountModel.getAll(companyId);
+        
+        const completeLedger = [];
+        for (const account of accounts) {
+            const movements = await EntryModel.getLedgerByAccount(companyId, account.id, account.nature, startDate, endDate);
+            completeLedger.push({
+                account: {
+                    id: account.id,
+                    code: account.code,
+                    name: account.name,
+                    nature: account.nature
+                },
+                movements
+            });
+        }
+        
+        // Sort accounts by code
+        completeLedger.sort((a, b) => a.account.code.localeCompare(b.account.code));
+        
+        res.json(completeLedger);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     createEntry,
     getDailyBook,
@@ -124,5 +155,6 @@ module.exports = {
     getProfitAndLoss,
     getBalanceSheet,
     getLedger,
+    getLedgerComplete,
     getAdjustedTrialBalance
 };

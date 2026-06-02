@@ -8,6 +8,7 @@ router.get('/trial-balance', entryController.getTrialBalance);
 router.get('/profit-loss', entryController.getProfitAndLoss);
 router.get('/balance-sheet', entryController.getBalanceSheet);
 router.get('/ledger', entryController.getLedger);
+router.get('/ledger-complete', entryController.getLedgerComplete);
 router.get('/adjusted-trial-balance', entryController.getAdjustedTrialBalance);
 
 module.exports = router;
